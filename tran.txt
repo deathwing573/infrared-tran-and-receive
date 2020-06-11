@@ -1,0 +1,57 @@
+#include <18F4520.h>
+#fuses NOMCLR INTRC_IO 
+#use delay(clock=8000000)
+#use fast_io(C)
+#use pwm (PWM1, FREQUENCY = 38KHz, DUTY = 25, PWM_OFF)
+ 
+void send_signal(unsigned int32 number){
+  int8 i;
+  // Send 9ms burst
+  pwm_on();
+  delay_ms(9);
+  // Send 4.5ms space
+  pwm_off();
+  delay_us(4500);
+  // Send data
+  for(i = 0; i < 32; i++){
+    // If bit is 1 send 560us pulse and 1680us space
+    if(bit_test(number, 31 - i)){
+      pwm_on();
+      delay_us(560);
+      pwm_off();
+      delay_us(1680);
+    }
+    // If bit is 0 send 560us pulse and 560us space
+    else{
+      pwm_on();
+      delay_us(560);
+      pwm_off();
+      delay_us(560);
+    }
+  }
+  // Send end bit
+  pwm_on();
+  delay_us(560);
+  pwm_off();
+  delay_us(560);
+}
+void main() {
+  setup_oscillator(OSC_8MHZ);            // Set internal oscillator to 8mhz
+  output_c(0);
+  set_tris_c(0x00);
+  // Configure RC2 as output pin
+   while(TRUE){
+    while(!input(PIN_D0)){
+      send_signal(0x40BFA2FF);
+      delay_ms(500);
+    }
+    while(!input(PIN_D1)){
+      send_signal(0x40BF627F);
+      delay_ms(500);
+    }
+    while(!input(PIN_D2)){
+      send_signal(0x40BFE2BF);
+      delay_ms(500);
+    }
+  }
+}
